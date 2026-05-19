@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=juhe365-switch
+Comment=All-in-One Assistant for Claude Code, Codex & Gemini CLI
+Exec=juhe365-switch
+Icon=vip.juhe365.switch
+Terminal=false
+Categories=Utility;Development;
+StartupNotify=true
