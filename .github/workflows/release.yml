@@ -30,11 +30,6 @@ jobs:
             platform: linux
             asset_arch: x64
             rust_target: ""
-          - label: macOS Intel unsigned
-            os: macos-13
-            platform: macos
-            asset_arch: x64
-            rust_target: x86_64-apple-darwin
           - label: macOS Apple Silicon unsigned
             os: macos-14
             platform: macos
@@ -251,7 +246,6 @@ jobs:
             - Windows x64: `juhe365-switch-${{ github.ref_name }}-Windows-x64.msi`
             - Windows x64 Portable: `juhe365-switch-${{ github.ref_name }}-Windows-x64-portable.zip`
             - macOS Apple Silicon / M 系列: `juhe365-switch-${{ github.ref_name }}-macOS-arm64.dmg` / `.zip`
-            - macOS Intel: `juhe365-switch-${{ github.ref_name }}-macOS-x64.dmg` / `.zip`
             - Linux x64: `juhe365-switch-${{ github.ref_name }}-Linux-x64.AppImage` / `.deb` / `.rpm`
             - 校验文件: `SHA256SUMS.txt`
 
@@ -259,7 +253,7 @@ jobs:
 
             - 本版本安装包未进行商业代码签名。
             - macOS 版本未进行 Apple 公证，首次打开可能提示无法验证开发者，请在系统设置中手动允许打开。
-            - Linux arm64 可在后续单独补充，避免影响本次主流系统发布。
+            - macOS Intel 和 Linux arm64 可在后续单独补充，避免影响本次主流系统发布。
           files: release-assets/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
