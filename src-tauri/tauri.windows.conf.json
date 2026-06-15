@@ -4,7 +4,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "juhe365-switch",
+        "title": "CC Switch",
         "titleBarStyle": "Visible",
         "visible": false,
         "minWidth": 900,

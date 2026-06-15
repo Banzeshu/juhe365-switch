@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
@@ -46,9 +45,11 @@ import { hermesApi } from "@/lib/api/hermes";
 import { useProxyStatus } from "@/hooks/useProxyStatus";
 import { useAutoCompact } from "@/hooks/useAutoCompact";
 import { useUsageCacheBridge } from "@/hooks/useUsageCacheBridge";
+import { useTauriEvent } from "@/hooks/useTauriEvent";
 import { useLastValidValue } from "@/hooks/useLastValidValue";
 import { extractErrorMessage } from "@/utils/errorUtils";
 import { isTextEditableTarget } from "@/utils/domUtils";
+import { deepClone } from "@/utils/deepClone";
 import { cn } from "@/lib/utils";
 import {
   isWindows,
@@ -58,7 +59,6 @@ import {
 } from "@/lib/platform";
 import { AppSwitcher } from "@/components/AppSwitcher";
 import { ProviderList } from "@/components/providers/ProviderList";
-import { Juhe365QuickAccess } from "@/components/Juhe365QuickAccess";
 import { AddProviderDialog } from "@/components/providers/AddProviderDialog";
 import { EditProviderDialog } from "@/components/providers/EditProviderDialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -90,6 +90,7 @@ import ToolsPanel from "@/components/openclaw/ToolsPanel";
 import AgentsDefaultsPanel from "@/components/openclaw/AgentsDefaultsPanel";
 import OpenClawHealthBanner from "@/components/openclaw/OpenClawHealthBanner";
 import HermesMemoryPanel from "@/components/hermes/HermesMemoryPanel";
+import { Juhe365QuickAccess } from "@/components/Juhe365QuickAccess";
 
 type View =
   | "providers"
@@ -107,7 +108,7 @@ type View =
   | "openclawAgents"
   | "hermesMemory";
 
-interface WebDavSyncStatusUpdatedPayload {
+interface SyncStatusUpdatedPayload {
   source?: string;
   status?: string;
   error?: string;
@@ -302,12 +303,12 @@ function App() {
   const handleDisableOmo = () => {
     disableOmoMutation.mutate(undefined, {
       onSuccess: () => {
-        toast.success(t("omo.disabled", { defaultValue: "OMO disabled" }));
+        toast.success(t("omo.disabled", { defaultValue: "OMO 已停用" }));
       },
       onError: (error: Error) => {
         toast.error(
           t("omo.disableFailed", {
-            defaultValue: "鍋滅敤 OMO 澶辫触: {{error}}",
+            defaultValue: "停用 OMO 失败: {{error}}",
             error: extractErrorMessage(error),
           }),
         );
@@ -319,12 +320,12 @@ function App() {
   const handleDisableOmoSlim = () => {
     disableOmoSlimMutation.mutate(undefined, {
       onSuccess: () => {
-        toast.success(t("omo.disabled", { defaultValue: "OMO disabled" }));
+        toast.success(t("omo.disabled", { defaultValue: "OMO 已停用" }));
       },
       onError: (error: Error) => {
         toast.error(
           t("omo.disableFailed", {
-            defaultValue: "鍋滅敤 OMO 澶辫触: {{error}}",
+            defaultValue: "停用 OMO 失败: {{error}}",
             error: extractErrorMessage(error),
           }),
         );
@@ -362,117 +363,59 @@ function App() {
     };
   }, [activeApp, refetch]);
 
-  useEffect(() => {
-    let unsubscribe: (() => void) | undefined;
-    let active = true;
+  useTauriEvent("universal-provider-synced", async () => {
+    await queryClient.invalidateQueries({ queryKey: ["providers"] });
+    try {
+      await providersApi.updateTrayMenu();
+    } catch (error) {
+      console.error("[App] Failed to update tray menu", error);
+    }
+  });
 
-    const setupListener = async () => {
-      try {
-        const { listen } = await import("@tauri-apps/api/event");
-        const off = await listen("universal-provider-synced", async () => {
-          await queryClient.invalidateQueries({ queryKey: ["providers"] });
-          try {
-            await providersApi.updateTrayMenu();
-          } catch (error) {
-            console.error("[App] Failed to update tray menu", error);
-          }
-        });
-        if (!active) {
-          off();
-          return;
-        }
-        unsubscribe = off;
-      } catch (error) {
-        console.error(
-          "[App] Failed to subscribe universal-provider-synced event",
-          error,
-        );
-      }
-    };
-
-    void setupListener();
-    return () => {
-      active = false;
-      unsubscribe?.();
-    };
-  }, [queryClient]);
-
-  useEffect(() => {
-    let unsubscribe: (() => void) | undefined;
-    let active = true;
-
-    const setupListener = async () => {
-      try {
-        const off = await listen(
-          "webdav-sync-status-updated",
-          async (event) => {
-            const payload = (event.payload ??
-              {}) as WebDavSyncStatusUpdatedPayload;
-            await queryClient.invalidateQueries({ queryKey: ["settings"] });
-
-            if (payload.source !== "auto" || payload.status !== "error") {
-              return;
-            }
-
-            toast.error(
-              t("settings.webdavSync.autoSyncFailedToast", {
-                error: payload.error || t("common.unknown"),
-              }),
-            );
-          },
-        );
-        if (!active) {
-          off();
-          return;
-        }
-        unsubscribe = off;
-      } catch (error) {
-        console.error(
-          "[App] Failed to subscribe webdav-sync-status-updated event",
-          error,
-        );
-      }
-    };
-
-    void setupListener();
-    return () => {
-      active = false;
-      unsubscribe?.();
-    };
-  }, [queryClient, t]);
-
-  // Listen for proxy-official-warning: warn when takeover is enabled with an official provider
-  useEffect(() => {
-    let unsubscribe: (() => void) | undefined;
-    let active = true;
-
-    const setup = async () => {
-      const off = await listen("proxy-official-warning", (event) => {
-        const { providerName } = event.payload as {
-          appType: string;
-          providerName: string;
-        };
-        toast.warning(
-          t("notifications.proxyOfficialWarning", {
-            name: providerName,
-            defaultValue: `褰撳墠渚涘簲鍟?${providerName} 鏄畼鏂逛緵搴斿晢锛屽缓璁垏鎹㈠埌绗笁鏂逛緵搴斿晢鍚庡啀浣跨敤浠ｇ悊鎺ョ`,
-          }),
-          { duration: 8000 },
-        );
-      });
-      if (!active) {
-        off();
+  useTauriEvent<SyncStatusUpdatedPayload | null | undefined>(
+    "webdav-sync-status-updated",
+    async (payload) => {
+      const statusPayload = payload ?? {};
+      await queryClient.invalidateQueries({ queryKey: ["settings"] });
+      if (statusPayload.source !== "auto" || statusPayload.status !== "error") {
         return;
       }
-      unsubscribe = off;
-    };
+      toast.error(
+        t("settings.webdavSync.autoSyncFailedToast", {
+          error: statusPayload.error || t("common.unknown"),
+        }),
+      );
+    },
+  );
 
-    void setup();
-    return () => {
-      active = false;
-      unsubscribe?.();
-    };
-  }, [t]);
+  useTauriEvent<SyncStatusUpdatedPayload | null | undefined>(
+    "s3-sync-status-updated",
+    async (payload) => {
+      const statusPayload = payload ?? {};
+      await queryClient.invalidateQueries({ queryKey: ["settings"] });
+      if (statusPayload.source !== "auto" || statusPayload.status !== "error") {
+        return;
+      }
+      toast.error(
+        t("settings.s3Sync.autoSyncFailedToast", {
+          error: statusPayload.error || t("common.unknown"),
+        }),
+      );
+    },
+  );
+
+  useTauriEvent<{ appType: string; providerName: string }>(
+    "proxy-official-warning",
+    (payload) => {
+      toast.warning(
+        t("notifications.proxyOfficialWarning", {
+          name: payload.providerName,
+          defaultValue: `当前供应商 ${payload.providerName} 是官方供应商，建议切换到第三方供应商后再使用代理接管`,
+        }),
+        { duration: 8000 },
+      );
+    },
+  );
 
   useEffect(() => {
     let active = true;
@@ -505,7 +448,8 @@ function App() {
   }, []);
 
   useEffect(() => {
-    // settingsData 鏈姞杞芥椂璺宠繃锛岄伩鍏嶇敤 fallback false 瑕嗙洊 Rust 渚у凡璁惧ソ鐨勮楗扮姸鎬?    if (!settingsData) return;
+    // settingsData 未加载时跳过，避免用 fallback false 覆盖 Rust 侧已设好的装饰状态
+    if (!settingsData) return;
 
     const syncWindowDecorations = async () => {
       try {
@@ -548,7 +492,7 @@ function App() {
         const migrated = await invoke<boolean>("get_migration_result");
         if (migrated) {
           toast.success(
-            t("migration.success", { defaultValue: "閰嶇疆杩佺Щ鎴愬姛" }),
+            t("migration.success", { defaultValue: "配置迁移成功" }),
             { closeButton: true },
           );
         }
@@ -664,7 +608,7 @@ function App() {
       const detail =
         extractErrorMessage(error) ||
         t("notifications.openLinkFailed", {
-          defaultValue: "閾炬帴鎵撳紑澶辫触",
+          defaultValue: "链接打开失败",
         });
       toast.error(detail);
     }
@@ -708,7 +652,7 @@ function App() {
       }
       toast.success(
         t("notifications.removeFromConfigSuccess", {
-          defaultValue: "宸蹭粠閰嶇疆绉婚櫎",
+          defaultValue: "已从配置移除",
         }),
         { closeButton: true },
       );
@@ -744,12 +688,12 @@ function App() {
       addToLive?: boolean;
     } = {
       name: `${provider.name} copy`,
-      settingsConfig: JSON.parse(JSON.stringify(provider.settingsConfig)), // 娣辨嫹璐?      websiteUrl: provider.websiteUrl,
+      settingsConfig: deepClone(provider.settingsConfig),
+      websiteUrl: provider.websiteUrl,
       category: provider.category,
-      sortIndex: newSortIndex, // 澶嶅埗鍘?sortIndex + 1
-      meta: provider.meta
-        ? JSON.parse(JSON.stringify(provider.meta))
-        : undefined, // 娣辨嫹璐?      icon: provider.icon,
+      sortIndex: newSortIndex, // 复制原 sortIndex + 1
+      meta: provider.meta ? deepClone(provider.meta) : undefined,
+      icon: provider.icon,
       iconColor: provider.iconColor,
     };
 
@@ -783,7 +727,7 @@ function App() {
         const errorMessage = extractErrorMessage(error);
         toast.error(
           t("provider.duplicateLiveIdsLoadFailed", {
-            defaultValue: "Failed to read provider IDs from live config",
+            defaultValue: "读取配置中的供应商标识失败，请先修复配置后再试",
           }) + (errorMessage ? `: ${errorMessage}` : ""),
         );
         return;
@@ -818,10 +762,10 @@ function App() {
           console.error("[App] Failed to update sort order", error);
           toast.error(
             t("provider.sortUpdateFailed", {
-              defaultValue: "鎺掑簭鏇存柊澶辫触",
+              defaultValue: "排序更新失败",
             }),
           );
-          return; // 濡傛灉鎺掑簭鏇存柊澶辫触锛屼笉缁х画娣诲姞
+          return; // 如果排序更新失败，不继续添加
         }
       }
     }
@@ -841,7 +785,7 @@ function App() {
       });
       toast.success(
         t("provider.terminalOpened", {
-          defaultValue: "缁堢宸叉墦寮€",
+          defaultValue: "终端已打开",
         }),
       );
     } catch (error) {
@@ -849,7 +793,7 @@ function App() {
       const errorMessage = extractErrorMessage(error);
       toast.error(
         t("provider.terminalOpenFailed", {
-          defaultValue: "鎵撳紑缁堢澶辫触",
+          defaultValue: "打开终端失败",
         }) + (errorMessage ? `: ${errorMessage}` : ""),
       );
     }
@@ -879,7 +823,7 @@ function App() {
   const notifyWindowControlError = (error: unknown) => {
     toast.error(
       t("notifications.windowControlFailed", {
-        defaultValue: "绐楀彛鎺у埗澶辫触锛歿{error}}",
+        defaultValue: "窗口控制失败：{{error}}",
         error: extractErrorMessage(error),
       }),
     );
@@ -1203,7 +1147,7 @@ function App() {
                   {currentView === "agents" && t("agents.title")}
                   {currentView === "universal" &&
                     t("universalProvider.title", {
-                      defaultValue: "Universal Providers",
+                      defaultValue: "统一供应商",
                     })}
                   {currentView === "sessions" && t("sessionManager.title")}
                   {currentView === "workspace" && t("workspace.title")}
@@ -1258,7 +1202,7 @@ function App() {
                       setCurrentView("settings");
                     }}
                     title={t("usage.title", {
-                      defaultValue: "浣跨敤缁熻",
+                      defaultValue: "使用统计",
                     })}
                     className="hover:bg-black/5 dark:hover:bg-white/5"
                   >
@@ -1607,7 +1551,7 @@ function App() {
         }}
         onSubmit={handleEditProvider}
         appId={activeApp}
-        isProxyTakeover={isProxyRunning && isCurrentAppTakeoverActive}
+        isProxyTakeover={isCurrentAppTakeoverActive}
       />
 
       {effectiveUsageProvider && (
@@ -1676,5 +1620,3 @@ function App() {
 }
 
 export default App;
-
-

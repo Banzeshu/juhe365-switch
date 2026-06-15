@@ -10,6 +10,8 @@ import type {
   UniversalProviderApps,
   UniversalProviderModels,
 } from "@/types";
+import { deepClone } from "@/utils/deepClone";
+import { filterVisibleProviderPresets } from "./presetVisibility";
 
 /**
  * 统一供应商预设接口
@@ -33,6 +35,8 @@ export interface UniversalProviderPreset {
   description?: string;
   /** 是否为自定义模板（允许用户完全自定义） */
   isCustomTemplate?: boolean;
+  /** 分类用于复用预设可见性过滤规则 */
+  category?: "custom";
 }
 
 /**
@@ -43,21 +47,21 @@ const NEWAPI_DEFAULT_MODELS: UniversalProviderModels = {
     model: "claude-sonnet-4-6",
     haikuModel: "claude-haiku-4-5-20251001",
     sonnetModel: "claude-sonnet-4-6",
-    opusModel: "claude-opus-4-7",
+    opusModel: "claude-opus-4-8",
   },
   codex: {
-    model: "gpt-5.4",
+    model: "gpt-5.5",
     reasoningEffort: "high",
   },
   gemini: {
-    model: "gemini-3.1-pro",
+    model: "gemini-3.5-flash",
   },
 };
 
 /**
  * 统一供应商预设列表
  */
-export const universalProviderPresets: UniversalProviderPreset[] = [
+const allUniversalProviderPresets: UniversalProviderPreset[] = [
   {
     name: "NewAPI",
     providerType: "newapi",
@@ -86,8 +90,12 @@ export const universalProviderPresets: UniversalProviderPreset[] = [
     iconColor: "#6366F1",
     description: "自定义配置的 API 网关",
     isCustomTemplate: true,
+    category: "custom",
   },
 ];
+
+export const universalProviderPresets: UniversalProviderPreset[] =
+  filterVisibleProviderPresets(allUniversalProviderPresets);
 
 /**
  * 根据预设创建统一供应商
@@ -106,7 +114,7 @@ export function createUniversalProviderFromPreset(
     apps: { ...preset.defaultApps },
     baseUrl,
     apiKey,
-    models: JSON.parse(JSON.stringify(preset.defaultModels)), // Deep copy
+    models: deepClone(preset.defaultModels),
     websiteUrl: preset.websiteUrl,
     icon: preset.icon,
     iconColor: preset.iconColor,

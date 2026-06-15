@@ -8,7 +8,7 @@ release/
 *.tsbuildinfo
 .npmrc
 CLAUDE.md
-# AGENTS.md
+AGENTS.md
 GEMINI.md
 /.claude
 /.codex
@@ -28,9 +28,5 @@ flatpak-repo/
 copilot-api
 .history
 CODEBUDDY.md
+.github
 mainWindow.js
-pnpm.cjs
-pnpm.exe
-cc-switch-main/
-tauri-signing.key
-tauri-signing.key.pub

@@ -1,6 +1,6 @@
 //! Deep link URL parser
 //!
-//! Parses ccswitch:// URLs into DeepLinkImportRequest structures.
+//! Parses juhe365-switch:// and ccswitch:// URLs into DeepLinkImportRequest structures.
 
 use super::utils::validate_url;
 use super::DeepLinkImportRequest;
@@ -8,7 +8,7 @@ use crate::error::AppError;
 use std::collections::HashMap;
 use url::Url;
 
-/// Parse a ccswitch:// URL into a DeepLinkImportRequest
+/// Parse a juhe365-switch:// or ccswitch:// URL into a DeepLinkImportRequest
 ///
 /// Expected format:
 /// ccswitch://v1/import?resource={type}&...

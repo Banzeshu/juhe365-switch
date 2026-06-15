@@ -1,10 +1,10 @@
-id: vip.juhe365.switch
+id: com.ccswitch.desktop
 
 runtime: org.gnome.Platform
 runtime-version: '46'
 sdk: org.gnome.Sdk
 
-command: juhe365-switch
+command: cc-switch
 
 finish-args:
   - --share=ipc
@@ -16,7 +16,7 @@ finish-args:
   - --talk-name=org.kde.StatusNotifierWatcher
   - --filesystem=xdg-run/tray-icon:create
   # GitHub Releases scenario: Users download and install manually.
-  # For "download and run" convenience (needs read/write access to ~/.juhe365-switch, ~/.claude, ~/.claude.json, ~/.codex, ~/.gemini,
+  # For "download and run" convenience (needs read/write access to ~/.cc-switch, ~/.claude, ~/.claude.json, ~/.codex, ~/.gemini,
   # and supports custom directory overrides), we grant full Home access by default.
   # If you plan to publish on Flathub or prefer minimal permissions, replace this with more precise directory grants (see flatpak/README.md).
   - --filesystem=home
@@ -75,16 +75,16 @@ modules:
         url: https://github.com/AyatanaIndicators/libayatana-appindicator.git
         tag: 0.5.93
 
-  - name: juhe365-switch
+  - name: cc-switch
     buildsystem: simple
     sources:
       # Placed in flatpak/ directory by CI or local build script
       - type: file
-        path: juhe365-switch.deb
+        path: cc-switch.deb
       - type: file
-        path: vip.juhe365.switch.desktop
+        path: com.ccswitch.desktop.desktop
       - type: file
-        path: vip.juhe365.switch.metainfo.xml
+        path: com.ccswitch.desktop.metainfo.xml
       - type: file
         path: ../src-tauri/icons/128x128.png
     build-commands:
@@ -93,6 +93,6 @@ modules:
       - cp -a usr/* /app/
       # Use our own desktop/metainfo/icon to align with Flatpak app id
       - rm -f /app/share/applications/*.desktop
-      - install -Dm644 vip.juhe365.switch.desktop /app/share/applications/vip.juhe365.switch.desktop
-      - install -Dm644 vip.juhe365.switch.metainfo.xml /app/share/metainfo/vip.juhe365.switch.metainfo.xml
-      - install -Dm644 128x128.png /app/share/icons/hicolor/128x128/apps/vip.juhe365.switch.png
+      - install -Dm644 com.ccswitch.desktop.desktop /app/share/applications/com.ccswitch.desktop.desktop
+      - install -Dm644 com.ccswitch.desktop.metainfo.xml /app/share/metainfo/com.ccswitch.desktop.metainfo.xml
+      - install -Dm644 128x128.png /app/share/icons/hicolor/128x128/apps/com.ccswitch.desktop.png

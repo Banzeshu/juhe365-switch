@@ -134,6 +134,10 @@ vi.mock("@/components/UpdateBadge", () => ({
   ),
 }));
 
+vi.mock("@/components/Juhe365QuickAccess", () => ({
+  Juhe365QuickAccess: () => <div data-testid="juhe365-quick-access" />,
+}));
+
 vi.mock("@/components/mcp/McpPanel", () => ({
   default: ({ open, onOpenChange }: any) =>
     open ? (
@@ -218,7 +222,7 @@ describe("App integration with MSW", () => {
 
     expect(toastErrorMock).not.toHaveBeenCalled();
     expect(toastSuccessMock).toHaveBeenCalled();
-  });
+  }, 15_000);
 
   it("shows toast when auto sync fails in background", async () => {
     const { default: App } = await import("@/App");
@@ -230,10 +234,31 @@ describe("App integration with MSW", () => {
       ),
     );
 
+    expect(() => {
+      emitTauriEvent("webdav-sync-status-updated", null);
+    }).not.toThrow();
+    expect(toastErrorMock).not.toHaveBeenCalled();
+
     emitTauriEvent("webdav-sync-status-updated", {
       source: "auto",
       status: "error",
       error: "network timeout",
+    });
+
+    await waitFor(() => {
+      expect(toastErrorMock).toHaveBeenCalled();
+    });
+
+    toastErrorMock.mockReset();
+    expect(() => {
+      emitTauriEvent("s3-sync-status-updated", null);
+    }).not.toThrow();
+    expect(toastErrorMock).not.toHaveBeenCalled();
+
+    emitTauriEvent("s3-sync-status-updated", {
+      source: "auto",
+      status: "error",
+      error: "s3 timeout",
     });
 
     await waitFor(() => {

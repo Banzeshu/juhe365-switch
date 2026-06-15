@@ -32,6 +32,12 @@ pub struct QuotaTier {
     pub utilization: f64,
     /// ISO 8601 重置时间
     pub resets_at: Option<String>,
+    /// ZenMux: 已用额度（USD）
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub used_value_usd: Option<f64>,
+    /// ZenMux: 窗口上限（USD）
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_value_usd: Option<f64>,
 }
 
 /// 超额使用信息
@@ -322,7 +328,7 @@ async fn query_claude_quota(access_token: &str) -> SubscriptionQuota {
         .header("Authorization", format!("Bearer {access_token}"))
         .header("anthropic-beta", "oauth-2025-04-20")
         .header("Accept", "application/json")
-        .timeout(std::time::Duration::from_secs(10))
+        .timeout(std::time::Duration::from_secs(15))
         .send()
         .await;
 
@@ -377,6 +383,8 @@ async fn query_claude_quota(access_token: &str) -> SubscriptionQuota {
                         name: tier_name.to_string(),
                         utilization: util,
                         resets_at: w.resets_at,
+                        used_value_usd: None,
+                        max_value_usd: None,
                     });
                 }
             }
@@ -395,6 +403,8 @@ async fn query_claude_quota(access_token: &str) -> SubscriptionQuota {
                         name: key.clone(),
                         utilization: util,
                         resets_at: w.resets_at,
+                        used_value_usd: None,
+                        max_value_usd: None,
                     });
                 }
             }
@@ -658,7 +668,7 @@ pub(crate) async fn query_codex_quota(
         req = req.header("ChatGPT-Account-Id", id);
     }
 
-    let resp = match req.timeout(std::time::Duration::from_secs(10)).send().await {
+    let resp = match req.timeout(std::time::Duration::from_secs(15)).send().await {
         Ok(r) => r,
         Err(e) => {
             return SubscriptionQuota::error(
@@ -714,6 +724,8 @@ pub(crate) async fn query_codex_quota(
                         .unwrap_or_else(|| "unknown".to_string()),
                     utilization: used,
                     resets_at: window.reset_at.and_then(unix_ts_to_iso),
+                    used_value_usd: None,
+                    max_value_usd: None,
                 });
             }
         }
@@ -932,32 +944,24 @@ fn parse_gemini_file_json(content: &str) -> GeminiCredentials {
 
 // ── Gemini Token 刷新 ──────────────────────────────────────
 
-/// Gemini OAuth Client 凭据。
-///
-/// 不在源码中硬编码 OAuth client secret，避免触发 GitHub push protection。
-/// 如需启用 Gemini 官方 OAuth token 自动刷新，可在构建时注入：
-/// GEMINI_OAUTH_CLIENT_ID / GEMINI_OAUTH_CLIENT_SECRET。
-const GEMINI_OAUTH_CLIENT_ID: Option<&str> = option_env!("GEMINI_OAUTH_CLIENT_ID");
-const GEMINI_OAUTH_CLIENT_SECRET: Option<&str> = option_env!("GEMINI_OAUTH_CLIENT_SECRET");
-
 /// 使用 refresh_token 刷新 Gemini access token
 ///
 /// Google OAuth access_token 仅有 ~1h 有效期，需要定期用 refresh_token 刷新。
 /// refresh_token 本身不过期（除非用户撤销授权）。
 async fn refresh_gemini_token(refresh_token: &str) -> Option<String> {
-    let client_id = GEMINI_OAUTH_CLIENT_ID?;
-    let client_secret = GEMINI_OAUTH_CLIENT_SECRET?;
+    let client_id = std::env::var("GEMINI_OAUTH_CLIENT_ID").ok()?;
+    let client_secret = std::env::var("GEMINI_OAUTH_CLIENT_SECRET").ok()?;
     let client = crate::proxy::http_client::get();
 
     let resp = client
         .post("https://oauth2.googleapis.com/token")
         .form(&[
-            ("client_id", client_id),
-            ("client_secret", client_secret),
+            ("client_id", client_id.as_str()),
+            ("client_secret", client_secret.as_str()),
             ("refresh_token", refresh_token),
             ("grant_type", "refresh_token"),
         ])
-        .timeout(std::time::Duration::from_secs(10))
+        .timeout(std::time::Duration::from_secs(15))
         .send()
         .await
         .ok()?;
@@ -1041,7 +1045,7 @@ async fn query_gemini_quota(access_token: &str) -> SubscriptionQuota {
                 "pluginType": "GEMINI"
             }
         }))
-        .timeout(std::time::Duration::from_secs(10))
+        .timeout(std::time::Duration::from_secs(15))
         .send()
         .await;
 
@@ -1102,7 +1106,7 @@ async fn query_gemini_quota(access_token: &str) -> SubscriptionQuota {
         .header("Authorization", format!("Bearer {access_token}"))
         .header("Content-Type", "application/json")
         .json(&quota_body)
-        .timeout(std::time::Duration::from_secs(10))
+        .timeout(std::time::Duration::from_secs(15))
         .send()
         .await;
 
@@ -1184,6 +1188,8 @@ async fn query_gemini_quota(access_token: &str) -> SubscriptionQuota {
             name,
             utilization: (1.0 - remaining) * 100.0,
             resets_at: reset_time,
+            used_value_usd: None,
+            max_value_usd: None,
         })
         .collect();
 
