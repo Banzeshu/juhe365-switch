@@ -98,7 +98,7 @@ export const openclawApiProtocols = [
 /**
  * OpenClaw provider presets list
  */
-const allOpenclawProviderPresets: OpenClawProviderPreset[] = [
+export const allOpenclawProviderPresets: OpenClawProviderPreset[] = [
 {
     name: "Juhe365",
     websiteUrl: "https://api.juhe365.vip",
@@ -301,10 +301,10 @@ const allOpenclawProviderPresets: OpenClawProviderPreset[] = [
       api: "openai-completions",
       models: [
         {
-          id: "doubao-seed-2-0-code-preview-latest",
-          name: "DouBao Seed Code Preview",
-          contextWindow: 128000,
-          cost: { input: 0.002, output: 0.006 },
+          id: "doubao-seed-2-1-pro-260628",
+          name: "DouBao Seed 2.1 Pro",
+          contextWindow: 262144,
+          cost: { input: 0.84, output: 4.2 },
         },
       ],
     },
@@ -321,9 +321,9 @@ const allOpenclawProviderPresets: OpenClawProviderPreset[] = [
       },
     },
     suggestedDefaults: {
-      model: { primary: "doubaoseed/doubao-seed-2-0-code-preview-latest" },
+      model: { primary: "doubaoseed/doubao-seed-2-1-pro-260628" },
       modelCatalog: {
-        "doubaoseed/doubao-seed-2-0-code-preview-latest": { alias: "DouBao" },
+        "doubaoseed/doubao-seed-2-1-pro-260628": { alias: "DouBao" },
       },
     },
   },
@@ -850,16 +850,20 @@ const allOpenclawProviderPresets: OpenClawProviderPreset[] = [
     websiteUrl: "https://longcat.chat/platform",
     apiKeyUrl: "https://longcat.chat/platform/api_keys",
     settingsConfig: {
-      baseUrl: "https://api.longcat.chat/v1",
+      baseUrl: "https://api.longcat.chat/openai/v1",
       apiKey: "",
       api: "openai-completions",
       authHeader: true,
       models: [
         {
-          id: "LongCat-Flash-Chat",
-          name: "LongCat Flash Chat",
-          contextWindow: 128000,
-          cost: { input: 0.001, output: 0.004 },
+          id: "LongCat-2.0",
+          name: "LongCat 2.0",
+          reasoning: false,
+          input: ["text"],
+          contextWindow: 1048576,
+          maxTokens: 131072,
+          compat: { maxTokensField: "max_tokens" },
+          cost: { input: 0.75, output: 2.95, cacheRead: 0.015 },
         },
       ],
     },
@@ -869,8 +873,8 @@ const allOpenclawProviderPresets: OpenClawProviderPreset[] = [
     templateValues: {
       baseUrl: {
         label: "Base URL",
-        placeholder: "https://api.longcat.chat/v1",
-        defaultValue: "https://api.longcat.chat/v1",
+        placeholder: "https://api.longcat.chat/openai/v1",
+        defaultValue: "https://api.longcat.chat/openai/v1",
         editorValue: "",
       },
       apiKey: {
@@ -880,8 +884,8 @@ const allOpenclawProviderPresets: OpenClawProviderPreset[] = [
       },
     },
     suggestedDefaults: {
-      model: { primary: "longcat/LongCat-Flash-Chat" },
-      modelCatalog: { "longcat/LongCat-Flash-Chat": { alias: "LongCat" } },
+      model: { primary: "longcat/LongCat-2.0" },
+      modelCatalog: { "longcat/LongCat-2.0": { alias: "LongCat" } },
     },
   },
   {

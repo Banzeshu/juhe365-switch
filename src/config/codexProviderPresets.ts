@@ -6,6 +6,7 @@ import type {
   CodexApiFormat,
   CodexCatalogModel,
   CodexChatReasoning,
+  PromptCacheRoutingMode,
 } from "../types";
 import type { PresetTheme } from "./claudeProviderPresets";
 import { filterVisibleProviderPresets } from "./presetVisibility";
@@ -32,10 +33,13 @@ export interface CodexProviderPreset {
   iconColor?: string; // 图标颜色
   // Codex API 格式
   apiFormat?: CodexApiFormat;
+  providerType?: "xai_oauth";
+  requiresOAuth?: boolean;
   // Codex Chat 本地路由模式下的模型目录
   modelCatalog?: CodexCatalogModel[];
   // Codex Responses -> Chat Completions reasoning capability defaults
   codexChatReasoning?: CodexChatReasoning;
+  promptCacheRouting?: PromptCacheRoutingMode;
 }
 
 /**
@@ -71,7 +75,14 @@ requires_openai_auth = true`;
 
 function modelCatalog(
   models: Array<
-    string | { model: string; displayName?: string; contextWindow?: number }
+    | string
+    | {
+        model: string;
+        displayName?: string;
+        contextWindow?: number;
+        supportsParallelToolCalls?: boolean;
+        inputModalities?: string[];
+      }
   >,
 ): CodexCatalogModel[] {
   return models.map((entry) =>
@@ -81,11 +92,13 @@ function modelCatalog(
           model: entry.model,
           displayName: entry.displayName,
           contextWindow: entry.contextWindow,
+          supportsParallelToolCalls: entry.supportsParallelToolCalls,
+          inputModalities: entry.inputModalities,
         },
   );
 }
 
-const allCodexProviderPresets: CodexProviderPreset[] = [
+export const allCodexProviderPresets: CodexProviderPreset[] = [
 {
     name: "Juhe365",
     websiteUrl: "https://api.juhe365.vip",
@@ -231,15 +244,15 @@ const allCodexProviderPresets: CodexProviderPreset[] = [
     config: generateThirdPartyConfig(
       "doubaoseed",
       "https://ark.cn-beijing.volces.com/api/v3",
-      "doubao-seed-2-0-code-preview-latest",
+      "doubao-seed-2-1-pro-260628",
     ),
     endpointCandidates: ["https://ark.cn-beijing.volces.com/api/v3"],
     apiFormat: "openai_chat",
     modelCatalog: modelCatalog([
       {
-        model: "doubao-seed-2-0-code-preview-latest",
-        displayName: "Doubao Seed Code Preview",
-        contextWindow: 256000,
+        model: "doubao-seed-2-1-pro-260628",
+        displayName: "Doubao Seed 2.1 Pro",
+        contextWindow: 262144,
       },
     ]),
     category: "cn_official",
@@ -605,20 +618,62 @@ requires_openai_auth = true`,
     config: generateThirdPartyConfig(
       "longcat",
       "https://api.longcat.chat/openai/v1",
-      "LongCat-Flash-Chat",
+      "LongCat-2.0",
     ),
     endpointCandidates: ["https://api.longcat.chat/openai/v1"],
     apiFormat: "openai_chat",
     modelCatalog: modelCatalog([
       {
-        model: "LongCat-Flash-Chat",
-        displayName: "LongCat Flash Chat",
-        contextWindow: 262144,
+        model: "LongCat-2.0",
+        displayName: "LongCat 2.0",
+        contextWindow: 1048576,
       },
     ]),
     category: "cn_official",
     icon: "longcat",
     iconColor: "#29E154",
+  },
+  {
+    name: "xAI (Grok)",
+    websiteUrl: "https://x.ai/api",
+    apiKeyUrl: "https://console.x.ai",
+    auth: generateThirdPartyAuth(""),
+    config: generateThirdPartyConfig("xai", "https://api.x.ai/v1", "grok-4.5"),
+    endpointCandidates: ["https://api.x.ai/v1"],
+    apiFormat: "openai_responses",
+    modelCatalog: modelCatalog([
+      {
+        model: "grok-4.5",
+        displayName: "Grok 4.5",
+        contextWindow: 500000,
+        supportsParallelToolCalls: true,
+        inputModalities: ["text", "image"],
+      },
+    ]),
+    category: "third_party",
+    icon: "xai",
+    iconColor: "#000000",
+  },
+  {
+    name: "xAI (Grok) OAuth",
+    websiteUrl: "https://x.ai/grok",
+    auth: generateThirdPartyAuth(""),
+    config: generateThirdPartyConfig("xai", "https://api.x.ai/v1", "grok-4.5"),
+    apiFormat: "openai_responses",
+    providerType: "xai_oauth",
+    requiresOAuth: true,
+    modelCatalog: modelCatalog([
+      {
+        model: "grok-4.5",
+        displayName: "Grok 4.5",
+        contextWindow: 500000,
+        supportsParallelToolCalls: true,
+        inputModalities: ["text", "image"],
+      },
+    ]),
+    category: "third_party",
+    icon: "xai",
+    iconColor: "#000000",
   },
   {
     name: "MiniMax",

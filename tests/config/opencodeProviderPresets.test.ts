@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   opencodeProviderPresets,
+  allOpencodeProviderPresets,
   opencodeNpmPackages,
   OPENCODE_PRESET_MODEL_VARIANTS,
 } from "@/config/opencodeProviderPresets";
@@ -20,12 +21,12 @@ describe("AWS Bedrock OpenCode Provider Presets", () => {
     expect(variants.length).toBeGreaterThan(0);
 
     const opusModel = variants.find((v) =>
-      v.id.includes("anthropic.claude-opus-4-8"),
+      v.id.includes("anthropic.claude-opus-5"),
     );
     expect(opusModel).toBeDefined();
   });
 
-  const bedrockPreset = opencodeProviderPresets.find(
+  const bedrockPreset = allOpencodeProviderPresets.find(
     (p) => p.name === "AWS Bedrock",
   );
 

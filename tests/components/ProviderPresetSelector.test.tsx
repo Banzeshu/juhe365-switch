@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import type { TFunction } from "i18next";
@@ -60,6 +60,8 @@ type TestPresetEntry = {
     websiteUrl: string;
     settingsConfig: Record<string, never>;
     category: ProviderCategory;
+    primePartner?: boolean;
+    isPartner?: boolean;
   };
 };
 
@@ -200,13 +202,15 @@ describe("ProviderPresetSelector pure helpers", () => {
     expect(getIds(filterPresetEntries(presetEntries, "聚合", t))).toEqual([]);
   });
 
-  it("支持 A-Z 排序、original 副本恢复原顺序，并且 getVisible 先 filter 再 sort", () => {
+  it("支持 A-Z 排序、original 模式将官方分类置顶，并且 getVisible 先 filter 再 sort", () => {
     const originalMode: PresetSortMode = "original";
     const nameAscMode: PresetSortMode = "nameAsc";
 
     const original = sortPresetEntries(presetEntries, originalMode, t);
     expect(original).not.toBe(presetEntries);
-    expect(getIds(original)).toEqual(["gamma", "alpha", "beta", "delta"]);
+    // original 模式置顶官方分类（alpha）；其余均非赞助商，按显示名排序
+    // （Beta Gateway < Delta Mirror < Gamma 本地名）。
+    expect(getIds(original)).toEqual(["alpha", "beta", "delta", "gamma"]);
 
     expect(getIds(sortPresetEntries(presetEntries, nameAscMode, t))).toEqual([
       "alpha",
@@ -226,18 +230,111 @@ describe("ProviderPresetSelector pure helpers", () => {
       ),
     ).toEqual(["alpha", "beta", "delta", "gamma"]);
   });
+
+  it("original 模式按「官方 → 尊享伙伴 → 赞助商 → 非赞助商」四段排序，前三组保序、末组按显示名，双重身份不重复", () => {
+    // 故意打乱传入顺序，验证：
+    // - official 组置顶（officialOnly、officialPrime 按出现顺序）；
+    // - 非官方且 primePartner 的预设次之（primeAndPartner）；
+    // - 赞助商（isPartner）第三段，保持传入（预设文件）顺序：
+    //   partnerZeta 在 partnerAlpha 前，不按字母重排；
+    // - 非赞助商按显示名排序：restAlpha 排到 restZulu 前；
+    // - 既是 official 又是 primePartner 的只归入官方组；
+    //   既是 primePartner 又是 isPartner 的只归入 prime 组、不在赞助商组重复。
+    const mixed: TestPresetEntry[] = [
+      {
+        id: "restZulu",
+        preset: {
+          name: "Zulu Rest",
+          websiteUrl: "https://rest-zulu.example.com",
+          settingsConfig: {},
+          category: "third_party",
+        },
+      },
+      {
+        id: "partnerZeta",
+        preset: {
+          name: "Zeta Partner",
+          websiteUrl: "https://partner-zeta.example.com",
+          settingsConfig: {},
+          category: "aggregator",
+          isPartner: true,
+        },
+      },
+      {
+        id: "primeAndPartner",
+        preset: {
+          name: "Prime And Partner",
+          websiteUrl: "https://prime-and-partner.example.com",
+          settingsConfig: {},
+          category: "cn_official",
+          primePartner: true,
+          isPartner: true,
+        },
+      },
+      {
+        id: "officialOnly",
+        preset: {
+          name: "Official Only",
+          websiteUrl: "https://official-only.example.com",
+          settingsConfig: {},
+          category: "official",
+        },
+      },
+      {
+        id: "officialPrime",
+        preset: {
+          name: "Official Prime",
+          websiteUrl: "https://official-prime.example.com",
+          settingsConfig: {},
+          category: "official",
+          primePartner: true,
+        },
+      },
+      {
+        id: "partnerAlpha",
+        preset: {
+          name: "Alpha Partner",
+          websiteUrl: "https://partner-alpha.example.com",
+          settingsConfig: {},
+          category: "third_party",
+          isPartner: true,
+        },
+      },
+      {
+        id: "restAlpha",
+        preset: {
+          name: "Alpha Rest",
+          websiteUrl: "https://rest-alpha.example.com",
+          settingsConfig: {},
+          category: "aggregator",
+        },
+      },
+    ];
+
+    expect(getIds(sortPresetEntries(mixed, "original", t))).toEqual([
+      "officialOnly",
+      "officialPrime",
+      "primeAndPartner",
+      "partnerZeta",
+      "partnerAlpha",
+      "restAlpha",
+      "restZulu",
+    ]);
+  });
 });
 
 describe("ProviderPresetSelector", () => {
-  it("默认按传入的预设数组顺序渲染，不按分类或名称重新排序", () => {
+  it("默认（original 模式）将官方分类置顶，非赞助商按显示名排序", () => {
     renderSelector();
 
+    // 组件内 t() 未配置翻译资源，显示名回退为 key 字面量：
+    // Beta Gateway < Delta Mirror < preset.gamma。
     expect(getPresetButtonTexts()).toEqual([
       "providerPreset.custom",
-      "preset.gamma",
       "preset.alpha",
       "Beta Gateway",
       "Delta Mirror",
+      "preset.gamma",
     ]);
   });
 
@@ -259,10 +356,10 @@ describe("ProviderPresetSelector", () => {
 
     expect(getPresetButtonTexts()).toEqual([
       "providerPreset.custom",
-      "preset.gamma",
       "preset.alpha",
       "Beta Gateway",
       "Delta Mirror",
+      "preset.gamma",
     ]);
   });
 
@@ -421,18 +518,80 @@ describe("ProviderPresetSelector", () => {
     ).toBeInTheDocument();
   });
 
-  it("点击搜索区域外自动收起并清空", async () => {
+  it("按 Ctrl+F 快捷键打开搜索输入框", async () => {
+    const user = userEvent.setup();
+    renderSelector();
+
+    // 初始没有搜索输入框
+    expect(
+      screen.queryByRole("textbox", {
+        name: /providerPreset\.(searchInput|searchPlaceholder)|搜索预设|search/i,
+      }),
+    ).not.toBeInTheDocument();
+
+    // 按 Ctrl+F 展开输入框
+    await user.keyboard("{Control>}f{/Control}");
+    expect(getSearchInput()).toBeInTheDocument();
+  });
+
+  it("搜索后点击预设按钮可选中预设且不清空搜索关键词", async () => {
+    const user = userEvent.setup();
+    const onPresetChange = vi.fn();
+    renderSelector({ onPresetChange });
+
+    await user.click(getSearchButton());
+    await user.type(getSearchInput(), "gateway");
+
+    await user.click(screen.getByRole("button", { name: "Beta Gateway" }));
+
+    expect(onPresetChange).toHaveBeenCalledWith("beta");
+    // 搜索框仍展开、关键词保留
+    expect(getSearchInput()).toBeInTheDocument();
+    expect(getSearchInput()).toHaveValue("gateway");
+  });
+
+  it("搜索已打开、焦点在别处时再次 Ctrl+F 把焦点移回搜索框且保留关键词", async () => {
     const user = userEvent.setup();
     renderSelector();
 
     await user.click(getSearchButton());
     await user.type(getSearchInput(), "gateway");
+
+    // 选中 preset 后焦点离开搜索框（搜索框仍展开、关键词保留）
+    await user.click(screen.getByRole("button", { name: "Beta Gateway" }));
+    expect(getSearchInput()).not.toHaveFocus();
+
+    // 再次 Ctrl+F：setSearchOpen(true) 同值不重渲染、autoFocus 不重触发，
+    // 需靠快捷键命中时的命令式聚焦把焦点移回搜索框，且不清空关键词
+    await user.keyboard("{Control>}f{/Control}");
+    await waitFor(() => expect(getSearchInput()).toHaveFocus());
+    expect(getSearchInput()).toHaveValue("gateway");
+  });
+
+  it("点击组件外区域自动收起并清空", async () => {
+    const user = userEvent.setup();
+    const Wrapper = () => {
+      const form = useForm();
+      return (
+        <Form {...form}>
+          <ProviderPresetSelector
+            selectedPresetId="custom"
+            presetEntries={presetEntries}
+            presetCategoryLabels={presetCategoryLabels}
+            onPresetChange={vi.fn()}
+          />
+          <div data-testid="outside">Outside</div>
+        </Form>
+      );
+    };
+    render(<Wrapper />);
+
+    await user.click(getSearchButton());
+    await user.type(getSearchInput(), "gateway");
     expect(getSearchInput()).toBeInTheDocument();
 
-    // 点击搜索区域外的元素(custom 按钮)应收起搜索框
-    await user.click(
-      screen.getByRole("button", { name: "providerPreset.custom" }),
-    );
+    // 点击组件外的元素应收起搜索框
+    await user.click(screen.getByTestId("outside"));
 
     expect(
       screen.queryByRole("textbox", {

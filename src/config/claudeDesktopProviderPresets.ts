@@ -56,7 +56,7 @@ export interface ClaudeDesktopProviderPreset {
   mode: "direct" | "proxy";
   apiFormat?: ClaudeDesktopApiFormat;
   modelRoutes?: ClaudeDesktopRoutePreset[];
-  providerType?: "github_copilot" | "codex_oauth";
+  providerType?: "github_copilot" | "codex_oauth" | "xai_oauth";
   requiresOAuth?: boolean;
 
   endpointCandidates?: string[];
@@ -137,7 +137,7 @@ const brandedRoutes = (
     });
 };
 
-const allClaudeDesktopProviderPresets: ClaudeDesktopProviderPreset[] = [
+export const allClaudeDesktopProviderPresets: ClaudeDesktopProviderPreset[] = [
 {
     name: "Juhe365",
     websiteUrl: "https://api.juhe365.vip",
@@ -263,9 +263,9 @@ const allClaudeDesktopProviderPresets: ClaudeDesktopProviderPreset[] = [
     mode: "proxy",
     apiFormat: "anthropic",
     modelRoutes: brandedRoutes(
-      "doubao-seed-2-0-code-preview-latest",
-      "doubao-seed-2-0-code-preview-latest",
-      "doubao-seed-2-0-code-preview-latest",
+      "doubao-seed-2-1-pro-260628",
+      "doubao-seed-2-1-pro-260628",
+      "doubao-seed-2-1-pro-260628",
     ),
     isPartner: true,
     partnerPromotionKey: "doubaoseed",
@@ -344,6 +344,19 @@ const allClaudeDesktopProviderPresets: ClaudeDesktopProviderPreset[] = [
     requiresOAuth: true,
     modelRoutes: brandedRoutes("gpt-5.5", "gpt-5.5", "gpt-5.4-mini"),
     icon: "openai",
+    iconColor: "#000000",
+  },
+  {
+    name: "xAI (Grok)",
+    websiteUrl: "https://x.ai/grok",
+    category: "third_party",
+    baseUrl: "https://api.x.ai/v1",
+    mode: "proxy",
+    apiFormat: "openai_responses",
+    providerType: "xai_oauth",
+    requiresOAuth: true,
+    modelRoutes: brandedRoutes("grok-4.5", "grok-4.5", "grok-4.5"),
+    icon: "xai",
     iconColor: "#000000",
   },
   {
@@ -525,9 +538,9 @@ const allClaudeDesktopProviderPresets: ClaudeDesktopProviderPreset[] = [
     mode: "proxy",
     apiFormat: "anthropic",
     modelRoutes: brandedRoutes(
-      "LongCat-Flash-Chat",
-      "LongCat-Flash-Chat",
-      "LongCat-Flash-Chat",
+      "LongCat-2.0",
+      "LongCat-2.0",
+      "LongCat-2.0",
     ),
     icon: "longcat",
     iconColor: "#29E154",

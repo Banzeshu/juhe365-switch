@@ -60,7 +60,7 @@ export interface ProviderPreset {
   // 供应商类型标识（用于特殊供应商检测）
   // - "github_copilot": GitHub Copilot 供应商（需要 OAuth 认证）
   // - "codex_oauth": OpenAI Codex via ChatGPT Plus/Pro 反代（需要 OAuth 认证）
-  providerType?: "github_copilot" | "codex_oauth";
+  providerType?: "github_copilot" | "codex_oauth" | "xai_oauth";
 
   // 是否需要 OAuth 认证（而非 API Key）
   requiresOAuth?: boolean;
@@ -73,7 +73,7 @@ export interface ProviderPreset {
   modelsUrl?: string;
 }
 
-const allProviderPresets: ProviderPreset[] = [
+export const allProviderPresets: ProviderPreset[] = [
 {
     name: "Juhe365",
     websiteUrl: "https://api.juhe365.vip",
@@ -214,10 +214,10 @@ const allProviderPresets: ProviderPreset[] = [
         ANTHROPIC_BASE_URL: "https://ark.cn-beijing.volces.com/api/compatible",
         ANTHROPIC_AUTH_TOKEN: "",
         API_TIMEOUT_MS: "3000000",
-        ANTHROPIC_MODEL: "doubao-seed-2-0-code-preview-latest",
-        ANTHROPIC_DEFAULT_SONNET_MODEL: "doubao-seed-2-0-code-preview-latest",
-        ANTHROPIC_DEFAULT_OPUS_MODEL: "doubao-seed-2-0-code-preview-latest",
-        ANTHROPIC_DEFAULT_HAIKU_MODEL: "doubao-seed-2-0-code-preview-latest",
+        ANTHROPIC_MODEL: "doubao-seed-2-1-pro-260628",
+        ANTHROPIC_DEFAULT_SONNET_MODEL: "doubao-seed-2-1-pro-260628",
+        ANTHROPIC_DEFAULT_OPUS_MODEL: "doubao-seed-2-1-pro-260628",
+        ANTHROPIC_DEFAULT_HAIKU_MODEL: "doubao-seed-2-1-pro-260628",
       },
     },
     category: "cn_official",
@@ -422,6 +422,12 @@ const allProviderPresets: ProviderPreset[] = [
       env: {
         ANTHROPIC_BASE_URL: "https://api.kimi.com/coding/",
         ANTHROPIC_AUTH_TOKEN: "",
+        ANTHROPIC_MODEL: "kimi-for-coding",
+        ANTHROPIC_DEFAULT_HAIKU_MODEL: "kimi-for-coding",
+        ANTHROPIC_DEFAULT_SONNET_MODEL: "kimi-for-coding",
+        ANTHROPIC_DEFAULT_OPUS_MODEL: "kimi-for-coding",
+        CLAUDE_CODE_MAX_CONTEXT_TOKENS: "262144",
+        CLAUDE_CODE_AUTO_COMPACT_WINDOW: "262144",
       },
     },
     category: "cn_official",
@@ -517,11 +523,12 @@ const allProviderPresets: ProviderPreset[] = [
       env: {
         ANTHROPIC_BASE_URL: "https://api.longcat.chat/anthropic",
         ANTHROPIC_AUTH_TOKEN: "",
-        ANTHROPIC_MODEL: "LongCat-Flash-Chat",
-        ANTHROPIC_DEFAULT_HAIKU_MODEL: "LongCat-Flash-Chat",
-        ANTHROPIC_DEFAULT_SONNET_MODEL: "LongCat-Flash-Chat",
-        ANTHROPIC_DEFAULT_OPUS_MODEL: "LongCat-Flash-Chat",
-        CLAUDE_CODE_MAX_OUTPUT_TOKENS: "6000",
+        ANTHROPIC_MODEL: "LongCat-2.0",
+        ANTHROPIC_SMALL_FAST_MODEL: "LongCat-2.0",
+        ANTHROPIC_DEFAULT_HAIKU_MODEL: "LongCat-2.0",
+        ANTHROPIC_DEFAULT_SONNET_MODEL: "LongCat-2.0",
+        ANTHROPIC_DEFAULT_OPUS_MODEL: "LongCat-2.0",
+        CLAUDE_CODE_MAX_OUTPUT_TOKENS: "131072",
         CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: 1,
       },
     },
@@ -1127,6 +1134,8 @@ const allProviderPresets: ProviderPreset[] = [
         ANTHROPIC_DEFAULT_HAIKU_MODEL: "gpt-5.4-mini",
         ANTHROPIC_DEFAULT_SONNET_MODEL: "gpt-5.5",
         ANTHROPIC_DEFAULT_OPUS_MODEL: "gpt-5.5",
+        CLAUDE_CODE_MAX_CONTEXT_TOKENS: "372000",
+        CLAUDE_CODE_AUTO_COMPACT_WINDOW: "372000",
       },
     },
     category: "third_party",
@@ -1134,6 +1143,25 @@ const allProviderPresets: ProviderPreset[] = [
     providerType: "codex_oauth",
     requiresOAuth: true,
     icon: "openai",
+    iconColor: "#000000",
+  },
+  {
+    name: "xAI (Grok)",
+    websiteUrl: "https://x.ai/grok",
+    settingsConfig: {
+      env: {
+        ANTHROPIC_BASE_URL: "https://api.x.ai/v1",
+        ANTHROPIC_MODEL: "grok-4.5",
+        ANTHROPIC_DEFAULT_HAIKU_MODEL: "grok-4.5",
+        ANTHROPIC_DEFAULT_SONNET_MODEL: "grok-4.5",
+        ANTHROPIC_DEFAULT_OPUS_MODEL: "grok-4.5",
+      },
+    },
+    category: "third_party",
+    apiFormat: "openai_responses",
+    providerType: "xai_oauth",
+    requiresOAuth: true,
+    icon: "xai",
     iconColor: "#000000",
   },
   {

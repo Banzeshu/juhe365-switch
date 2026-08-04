@@ -128,7 +128,7 @@ export interface HermesProviderSettingsConfig {
   [key: string]: unknown;
 }
 
-const allHermesProviderPresets: HermesProviderPreset[] = [
+export const allHermesProviderPresets: HermesProviderPreset[] = [
 {
     name: "Juhe365",
     websiteUrl: "https://api.juhe365.vip",
@@ -260,7 +260,7 @@ const allHermesProviderPresets: HermesProviderPreset[] = [
       api_mode: "anthropic_messages",
       models: [
         {
-          id: "doubao-seed-2-0-code-preview-latest",
+          id: "doubao-seed-2-1-pro-260628",
           name: "Doubao Seed 2.0 Code Preview",
         },
       ],
@@ -272,7 +272,7 @@ const allHermesProviderPresets: HermesProviderPreset[] = [
     iconColor: "#3370FF",
     suggestedDefaults: {
       model: {
-        default: "doubao-seed-2-0-code-preview-latest",
+        default: "doubao-seed-2-1-pro-260628",
         provider: "doubao_seed",
       },
     },
@@ -659,13 +659,13 @@ const allHermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://api.longcat.chat/openai/v1",
       api_key: "",
       api_mode: "chat_completions",
-      models: [{ id: "LongCat-Flash-Chat", name: "LongCat Flash Chat" }],
+      models: [{ id: "LongCat-2.0", name: "LongCat 2.0" }],
     },
     category: "cn_official",
     icon: "longcat",
     iconColor: "#29E154",
     suggestedDefaults: {
-      model: { default: "LongCat-Flash-Chat", provider: "longcat" },
+      model: { default: "LongCat-2.0", provider: "longcat" },
     },
   },
   {

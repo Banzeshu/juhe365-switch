@@ -9,7 +9,6 @@ interface PresetVisibilityFields {
 
 const ALWAYS_VISIBLE_CATEGORIES = new Set<ProviderCategory>([
   "official",
-  "cloud_provider",
   "custom",
   "omo",
   "omo-slim",
@@ -18,6 +17,9 @@ const ALWAYS_VISIBLE_CATEGORIES = new Set<ProviderCategory>([
 const VISIBLE_PRESET_NAMES = new Set([
   "Juhe365",
   "Azure OpenAI",
+  "AWS Bedrock",
+  "AWS Bedrock (AKSK)",
+  "AWS Bedrock (API Key)",
   "Baidu Qianfan Coding Plan",
   "Bailian",
   "Bailian For Coding",
@@ -31,6 +33,7 @@ const VISIBLE_PRESET_NAMES = new Set([
   "Kimi",
   "Kimi For Coding",
   "Kimi K2.7 Code",
+  "Longcat",
   "MiniMax",
   "MiniMax en",
   "ModelScope",
@@ -42,6 +45,9 @@ const VISIBLE_PRESET_NAMES = new Set([
   "StepFun en",
   "Xiaomi MiMo",
   "Xiaomi MiMo Token Plan (China)",
+  "Grok Official",
+  "xAI (Grok)",
+  "xAI (Grok) OAuth",
   "Zhipu GLM",
   "Zhipu GLM en",
   "火山Agentplan",

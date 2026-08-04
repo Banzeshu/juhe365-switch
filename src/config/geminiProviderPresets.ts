@@ -32,7 +32,7 @@ export interface GeminiProviderPreset {
   iconColor?: string; // 图标颜色
 }
 
-const allGeminiProviderPresets: GeminiProviderPreset[] = [
+export const allGeminiProviderPresets: GeminiProviderPreset[] = [
 {
     name: "Juhe365",
     websiteUrl: "https://api.juhe365.vip",

@@ -149,6 +149,13 @@ export const OPENCODE_PRESET_MODEL_VARIANTS: Record<
   ],
   "@ai-sdk/amazon-bedrock": [
     {
+      id: "global.anthropic.claude-opus-5",
+      name: "Claude Opus 5",
+      contextLimit: 1000000,
+      outputLimit: 128000,
+      modalities: { input: ["text", "image", "pdf"], output: ["text"] },
+    },
+    {
       id: "global.anthropic.claude-opus-4-8",
       name: "Claude Opus 4.8",
       contextLimit: 1000000,
@@ -278,7 +285,7 @@ export function getPresetModelDefaults(
   return models.find((m) => m.id === modelId);
 }
 
-const allOpencodeProviderPresets: OpenCodeProviderPreset[] = [
+export const allOpencodeProviderPresets: OpenCodeProviderPreset[] = [
 {
     name: "Juhe365",
     websiteUrl: "https://api.juhe365.vip",
@@ -446,8 +453,8 @@ const allOpencodeProviderPresets: OpenCodeProviderPreset[] = [
         setCacheKey: true,
       },
       models: {
-        "doubao-seed-2-0-code-preview-latest": {
-          name: "Doubao Seed Code Preview",
+        "doubao-seed-2-1-pro-260628": {
+          name: "Doubao Seed 2.1 Pro",
         },
       },
     },
@@ -886,12 +893,15 @@ const allOpencodeProviderPresets: OpenCodeProviderPreset[] = [
       npm: "@ai-sdk/openai-compatible",
       name: "Longcat",
       options: {
-        baseURL: "https://api.longcat.chat/v1",
+        baseURL: "https://api.longcat.chat/openai/v1",
         apiKey: "",
         setCacheKey: true,
       },
       models: {
-        "LongCat-Flash-Chat": { name: "LongCat Flash Chat" },
+        "LongCat-2.0": {
+          name: "LongCat 2.0",
+          options: { thinking: { type: "disabled" } },
+        },
       },
     },
     category: "cn_official",
@@ -900,8 +910,8 @@ const allOpencodeProviderPresets: OpenCodeProviderPreset[] = [
     templateValues: {
       baseURL: {
         label: "Base URL",
-        placeholder: "https://api.longcat.chat/v1",
-        defaultValue: "https://api.longcat.chat/v1",
+        placeholder: "https://api.longcat.chat/openai/v1",
+        defaultValue: "https://api.longcat.chat/openai/v1",
         editorValue: "",
       },
       apiKey: {
