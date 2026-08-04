@@ -138,7 +138,7 @@ const brandedRoutes = (
 };
 
 export const allClaudeDesktopProviderPresets: ClaudeDesktopProviderPreset[] = [
-{
+  {
     name: "Juhe365",
     websiteUrl: "https://api.juhe365.vip",
     apiKeyUrl: "https://api.juhe365.vip",
@@ -151,7 +151,7 @@ export const allClaudeDesktopProviderPresets: ClaudeDesktopProviderPreset[] = [
     icon: "generic",
     iconColor: "#3E50D8",
   },
-{
+  {
     name: "LemonData",
     websiteUrl: "https://lemondata.cc",
     apiKeyUrl: "https://lemondata.cc/r/FFX1ZDUP",
@@ -537,11 +537,7 @@ export const allClaudeDesktopProviderPresets: ClaudeDesktopProviderPreset[] = [
     baseUrl: "https://api.longcat.chat/anthropic",
     mode: "proxy",
     apiFormat: "anthropic",
-    modelRoutes: brandedRoutes(
-      "LongCat-2.0",
-      "LongCat-2.0",
-      "LongCat-2.0",
-    ),
+    modelRoutes: brandedRoutes("LongCat-2.0", "LongCat-2.0", "LongCat-2.0"),
     icon: "longcat",
     iconColor: "#29E154",
   },

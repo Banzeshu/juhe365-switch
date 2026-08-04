@@ -74,7 +74,7 @@ export interface ProviderPreset {
 }
 
 export const allProviderPresets: ProviderPreset[] = [
-{
+  {
     name: "Juhe365",
     websiteUrl: "https://api.juhe365.vip",
     apiKeyUrl: "https://api.juhe365.vip",
@@ -89,7 +89,7 @@ export const allProviderPresets: ProviderPreset[] = [
     icon: "generic",
     iconColor: "#3E50D8",
   },
-{
+  {
     name: "LemonData",
     websiteUrl: "https://lemondata.cc",
     apiKeyUrl: "https://lemondata.cc/r/FFX1ZDUP",

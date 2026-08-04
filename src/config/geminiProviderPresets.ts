@@ -33,7 +33,7 @@ export interface GeminiProviderPreset {
 }
 
 export const allGeminiProviderPresets: GeminiProviderPreset[] = [
-{
+  {
     name: "Juhe365",
     websiteUrl: "https://api.juhe365.vip",
     apiKeyUrl: "https://api.juhe365.vip",
@@ -51,7 +51,7 @@ export const allGeminiProviderPresets: GeminiProviderPreset[] = [
     icon: "generic",
     iconColor: "#3E50D8",
   },
-{
+  {
     name: "LemonData",
     websiteUrl: "https://lemondata.cc",
     apiKeyUrl: "https://lemondata.cc/r/FFX1ZDUP",

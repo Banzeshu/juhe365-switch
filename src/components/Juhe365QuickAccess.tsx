@@ -45,7 +45,10 @@ interface QuickAccessTarget {
   createProvider: ProviderFactory;
 }
 
-function createBaseProvider(id: string, settingsConfig: Provider["settingsConfig"]): Provider {
+function createBaseProvider(
+  id: string,
+  settingsConfig: Provider["settingsConfig"],
+): Provider {
   return {
     id,
     name: "Juhe365",
@@ -197,7 +200,10 @@ const QUICK_ACCESS_TARGETS: QuickAccessTarget[] = [
   },
 ];
 
-async function upsertAndSwitchProvider(target: QuickAccessTarget, apiKey: string) {
+async function upsertAndSwitchProvider(
+  target: QuickAccessTarget,
+  apiKey: string,
+) {
   const provider = target.createProvider(apiKey);
   const existingProviders = await providersApi.getAll(target.appId);
   const existing = existingProviders[provider.id];
@@ -229,7 +235,6 @@ export function Juhe365QuickAccess() {
     () => QUICK_ACCESS_APP_IDS.map((appId) => APP_LABELS[appId]).join(" / "),
     [],
   );
-
 
   const handleApply = async () => {
     const trimmedKey = apiKey.trim();

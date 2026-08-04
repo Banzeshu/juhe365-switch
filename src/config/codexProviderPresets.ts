@@ -99,7 +99,7 @@ function modelCatalog(
 }
 
 export const allCodexProviderPresets: CodexProviderPreset[] = [
-{
+  {
     name: "Juhe365",
     websiteUrl: "https://api.juhe365.vip",
     apiKeyUrl: "https://api.juhe365.vip",
@@ -114,7 +114,7 @@ export const allCodexProviderPresets: CodexProviderPreset[] = [
     icon: "generic",
     iconColor: "#3E50D8",
   },
-{
+  {
     name: "LemonData",
     websiteUrl: "https://lemondata.cc",
     apiKeyUrl: "https://lemondata.cc/r/FFX1ZDUP",

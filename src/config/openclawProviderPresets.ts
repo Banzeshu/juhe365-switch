@@ -99,7 +99,7 @@ export const openclawApiProtocols = [
  * OpenClaw provider presets list
  */
 export const allOpenclawProviderPresets: OpenClawProviderPreset[] = [
-{
+  {
     name: "Juhe365",
     websiteUrl: "https://api.juhe365.vip",
     apiKeyUrl: "https://api.juhe365.vip",
@@ -132,7 +132,7 @@ export const allOpenclawProviderPresets: OpenClawProviderPreset[] = [
       },
     },
   },
-{
+  {
     name: "LemonData",
     websiteUrl: "https://lemondata.cc",
     apiKeyUrl: "https://lemondata.cc/r/FFX1ZDUP",

@@ -6,6 +6,7 @@ mod claude_mcp;
 mod claude_plugin;
 mod codex_config;
 mod codex_history_migration;
+mod codex_state_db;
 mod commands;
 mod config;
 mod database;
@@ -13,12 +14,14 @@ mod deeplink;
 mod error;
 mod gemini_config;
 mod gemini_mcp;
+mod grok_config;
 pub mod hermes_config;
 mod init_status;
 mod lightweight;
 #[cfg(target_os = "linux")]
 mod linux_fix;
 mod mcp;
+mod model_capabilities;
 mod openclaw_config;
 mod opencode_config;
 mod panic_hook;
@@ -61,7 +64,7 @@ pub use store::AppState;
 use tauri_plugin_deep_link::DeepLinkExt;
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 
-use std::sync::Arc;
+use std::{fmt, sync::Arc};
 #[cfg(target_os = "macos")]
 use tauri::image::Image;
 use tauri::tray::{TrayIconBuilder, TrayIconEvent};
@@ -85,8 +88,40 @@ fn set_windows_app_user_model_id(app: &tauri::AppHandle) {
     }
 }
 
-fn redact_url_for_log(url_str: &str) -> String {
-    match url::Url::parse(url_str) {
+pub(crate) struct RedactedUrl<'a> {
+    url: &'a str,
+    known_secrets: &'a [String],
+}
+
+impl fmt::Display for RedactedUrl<'_> {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str(&redact_url_for_log_with_secrets(
+            self.url,
+            self.known_secrets,
+        ))
+    }
+}
+
+pub(crate) fn url_for_log(url: &str) -> RedactedUrl<'_> {
+    RedactedUrl {
+        url,
+        known_secrets: &[],
+    }
+}
+
+pub(crate) fn url_for_log_with_secrets<'a>(
+    url: &'a str,
+    known_secrets: &'a [String],
+) -> RedactedUrl<'a> {
+    RedactedUrl { url, known_secrets }
+}
+
+pub(crate) fn redact_url_for_log(url_str: &str) -> String {
+    redact_url_for_log_with_secrets(url_str, &[])
+}
+
+pub(crate) fn redact_url_for_log_with_secrets(url_str: &str, known_secrets: &[String]) -> String {
+    let mut sanitized = match url::Url::parse(url_str) {
         Ok(url) => {
             let mut output = format!("{}://", url.scheme());
             if let Some(host) = url.host_str() {
@@ -113,6 +148,34 @@ fn redact_url_for_log(url_str: &str) -> String {
                 None => base.to_string(),
             }
         }
+    };
+
+    for secret in known_secrets {
+        if secret.len() >= 8 {
+            sanitized = sanitized.replace(secret, "[REDACTED]");
+        }
+    }
+    sanitized
+}
+
+pub(crate) fn redact_url_origin_for_log(url_str: &str) -> String {
+    let scheme_relative = url_str.starts_with("//");
+    let parsed = if scheme_relative {
+        url::Url::parse(&format!("https:{url_str}"))
+    } else {
+        url::Url::parse(url_str)
+    };
+
+    match parsed {
+        Ok(url) if url.has_host() => {
+            let authority = &url[url::Position::BeforeHost..url::Position::AfterPort];
+            if scheme_relative {
+                format!("//{authority}")
+            } else {
+                format!("{}://{authority}", url.scheme())
+            }
+        }
+        _ => "[invalid target]".to_string(),
     }
 }
 

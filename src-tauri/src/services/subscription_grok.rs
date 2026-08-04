@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 //! Grok (xAI) 官方订阅额度查询
 //!
 //! 读取 Grok CLI 的 OAuth 凭据（~/.grok/auth.json），调用 grok.com 的

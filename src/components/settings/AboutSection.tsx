@@ -867,7 +867,9 @@ export function AboutSection({ isPortable }: AboutSectionProps) {
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => settingsApi.openExternal("https://api.juhe365.vip")}
+              onClick={() =>
+                settingsApi.openExternal("https://api.juhe365.vip")
+              }
               className="h-8 gap-1.5 text-xs"
             >
               <Globe className="h-3.5 w-3.5" />
@@ -878,9 +880,7 @@ export function AboutSection({ isPortable }: AboutSectionProps) {
               variant="outline"
               size="sm"
               onClick={() =>
-                settingsApi.openExternal(
-                  "https://api.juhe365.vip",
-                )
+                settingsApi.openExternal("https://api.juhe365.vip")
               }
               className="h-8 gap-1.5 text-xs"
             >

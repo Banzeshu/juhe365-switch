@@ -129,7 +129,7 @@ export interface HermesProviderSettingsConfig {
 }
 
 export const allHermesProviderPresets: HermesProviderPreset[] = [
-{
+  {
     name: "Juhe365",
     websiteUrl: "https://api.juhe365.vip",
     apiKeyUrl: "https://api.juhe365.vip",
@@ -147,7 +147,7 @@ export const allHermesProviderPresets: HermesProviderPreset[] = [
       model: { default: "openai/gpt-5.4", provider: "juhe365" },
     },
   },
-{
+  {
     name: "LemonData",
     websiteUrl: "https://lemondata.cc",
     apiKeyUrl: "https://lemondata.cc/r/FFX1ZDUP",
