@@ -2661,7 +2661,7 @@ dependencies = [
 
 [[package]]
 name = "juhe365-switch"
-version = "3.19.1"
+version = "3.19.2"
 dependencies = [
  "anyhow",
  "arboard",

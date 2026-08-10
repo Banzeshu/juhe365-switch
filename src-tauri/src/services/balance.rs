@@ -1,6 +1,6 @@
 //! 供应商余额查询服务
 //!
-//! 支持 DeepSeek、StepFun、SiliconFlow、OpenRouter、Novita AI 的账户余额查询。
+//! 支持 DeepSeek、StepFun、SiliconFlow、OpenRouter、Novita AI、Juhe365 的账户余额查询。
 //! 返回 UsageResult 格式，与现有用量系统无缝对接。
 //!
 //! 错误通道语义（与 coding_plan / subscription 两个服务保持一致）：
@@ -21,6 +21,7 @@ enum BalanceProvider {
     SiliconFlowEn,
     OpenRouter,
     NovitaAI,
+    Juhe365,
 }
 
 fn detect_provider(base_url: &str) -> Option<BalanceProvider> {
@@ -37,6 +38,8 @@ fn detect_provider(base_url: &str) -> Option<BalanceProvider> {
         Some(BalanceProvider::OpenRouter)
     } else if url.contains("api.novita.ai") {
         Some(BalanceProvider::NovitaAI)
+    } else if url.contains("api.juhe365.vip") {
+        Some(BalanceProvider::Juhe365)
     } else {
         None
     }
@@ -409,6 +412,112 @@ async fn query_novita(api_key: &str) -> Result<UsageResult, String> {
     })
 }
 
+// ── Juhe365 ────────────────────────────────────────────────
+// GET https://api.juhe365.vip/v1/usage
+// Response: wallet balance or key/subscription quota information.
+// Juhe365 is based on Sub2API, whose usage endpoint accepts the API key
+// directly; the website's /api/v1/user/profile requires a separate JWT.
+
+fn juhe365_usage_url(base_url: &str) -> String {
+    let base = base_url.trim_end_matches('/');
+    if base.ends_with("/v1") {
+        format!("{base}/usage")
+    } else {
+        format!("{base}/v1/usage")
+    }
+}
+
+fn parse_juhe365_usage(body: &serde_json::Value) -> UsageResult {
+    let quota = body.get("quota");
+    let remaining = parse_f64_field(body, "remaining")
+        .or_else(|| parse_f64_field(body, "balance"))
+        .or_else(|| quota.and_then(|v| parse_f64_field(v, "remaining")));
+
+    let Some(remaining) = remaining else {
+        return make_error("Missing 'remaining' or 'balance' field in response".to_string());
+    };
+
+    let total = quota.and_then(|v| parse_f64_field(v, "limit"));
+    let used = quota.and_then(|v| parse_f64_field(v, "used"));
+    let plan_name = body
+        .get("planName")
+        .and_then(|v| v.as_str())
+        .or_else(|| body.get("plan_name").and_then(|v| v.as_str()))
+        .unwrap_or("Juhe365");
+    let unit = body
+        .get("unit")
+        .and_then(|v| v.as_str())
+        .or_else(|| quota.and_then(|v| v.get("unit")).and_then(|v| v.as_str()))
+        .unwrap_or("USD");
+    let is_valid = body
+        .get("isValid")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(true);
+    let invalid_message = if is_valid {
+        None
+    } else {
+        body.get("status")
+            .and_then(|v| v.as_str())
+            .map(ToString::to_string)
+            .or_else(|| Some("Juhe365 balance is unavailable".to_string()))
+    };
+    let extra = body
+        .get("expires_at")
+        .and_then(|v| v.as_str())
+        .map(ToString::to_string);
+
+    UsageResult {
+        success: true,
+        data: Some(vec![UsageData {
+            plan_name: Some(plan_name.to_string()),
+            remaining: Some(remaining),
+            total,
+            used,
+            unit: Some(unit.to_string()),
+            is_valid: Some(is_valid),
+            invalid_message,
+            extra,
+        }]),
+        error: None,
+    }
+}
+
+async fn query_juhe365(base_url: &str, api_key: &str) -> Result<UsageResult, String> {
+    let client = crate::proxy::http_client::get();
+    let resp = client
+        .get(juhe365_usage_url(base_url))
+        .header("Authorization", format!("Bearer {api_key}"))
+        .header("Accept", "application/json")
+        .timeout(Duration::from_secs(15))
+        .send()
+        .await;
+
+    let resp = match resp {
+        Ok(r) => r,
+        Err(e) => return Err(format!("Network error: {e}")),
+    };
+
+    let status = resp.status();
+    if status == reqwest::StatusCode::UNAUTHORIZED || status == reqwest::StatusCode::FORBIDDEN {
+        return Ok(make_auth_error(status));
+    }
+    if !status.is_success() {
+        let body = resp.text().await.unwrap_or_default();
+        return Ok(make_error(format!("API error (HTTP {status}): {body}")));
+    }
+
+    let raw = match resp.bytes().await {
+        Ok(b) => b,
+        Err(e) => return Err(format!("Failed to read response: {e}")),
+    };
+    let body: serde_json::Value = match serde_json::from_slice(&raw) {
+        Ok(v) => v,
+        Err(e) => return Ok(make_error(format!("Failed to parse response: {e}"))),
+    };
+
+    Ok(parse_juhe365_usage(&body))
+}
+
 // ── 工具函数 ────────────────────────────────────────────────
 
 /// 解析 JSON 字段为 f64，兼容数字和字符串格式
@@ -450,5 +559,55 @@ pub async fn get_balance(base_url: &str, api_key: &str) -> Result<UsageResult, S
         BalanceProvider::SiliconFlowEn => query_siliconflow(api_key, false).await,
         BalanceProvider::OpenRouter => query_openrouter(api_key).await,
         BalanceProvider::NovitaAI => query_novita(api_key).await,
+        BalanceProvider::Juhe365 => query_juhe365(base_url, api_key).await,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{juhe365_usage_url, parse_juhe365_usage};
+
+    #[test]
+    fn juhe365_usage_url_uses_v1_endpoint() {
+        assert_eq!(
+            juhe365_usage_url("https://api.juhe365.vip/v1"),
+            "https://api.juhe365.vip/v1/usage"
+        );
+        assert_eq!(
+            juhe365_usage_url("https://api.juhe365.vip/"),
+            "https://api.juhe365.vip/v1/usage"
+        );
+    }
+
+    #[test]
+    fn parses_juhe365_wallet_response() {
+        let result = parse_juhe365_usage(&serde_json::json!({
+            "mode": "unrestricted",
+            "isValid": true,
+            "planName": "Wallet",
+            "remaining": 12.5,
+            "unit": "USD",
+            "balance": 12.5
+        }));
+
+        assert!(result.success);
+        let data = result.data.expect("balance data");
+        assert_eq!(data[0].remaining, Some(12.5));
+        assert_eq!(data[0].unit.as_deref(), Some("USD"));
+    }
+
+    #[test]
+    fn parses_juhe365_key_quota_response() {
+        let result = parse_juhe365_usage(&serde_json::json!({
+            "mode": "quota_limited",
+            "isValid": true,
+            "quota": { "limit": 10, "used": 3, "remaining": 7 },
+            "unit": "USD"
+        }));
+
+        let data = result.data.expect("quota data");
+        assert_eq!(data[0].remaining, Some(7.0));
+        assert_eq!(data[0].total, Some(10.0));
+        assert_eq!(data[0].used, Some(3.0));
     }
 }

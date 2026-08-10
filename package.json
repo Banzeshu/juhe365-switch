@@ -1,6 +1,6 @@
 {
   "name": "juhe365-switch",
-  "version": "3.19.1",
+  "version": "3.19.2",
   "description": "Juhe365 companion client for Claude Code, Codex & Gemini CLI",
   "type": "module",
   "scripts": {
